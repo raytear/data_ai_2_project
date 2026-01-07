@@ -1,0 +1,26 @@
+{
+  "model_name": "Linear Regression",
+  "r2_test": 0.9669193302038435,
+  "mse": 5.258320096840315,
+  "rmse": 2.2931027226969825,
+  "mae": 1.7825650860675932,
+  "feature_names": [
+    "avg_temp",
+    "total_rain",
+    "total_snow",
+    "rain_hours",
+    "snow_hours",
+    "avg_humidity"
+  ],
+  "train_days": 256,
+  "test_days": 110,
+  "coefficients": [
+    -0.28896358860409527,
+    0.016493548773961978,
+    -0.010743125686363085,
+    1.0527936246964378,
+    2.098369435859094,
+    0.0199716559540241
+  ],
+  "intercept": 188.51147283595924
+}
