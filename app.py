@@ -25,7 +25,7 @@ st.markdown("---")
 def load_model():
     """모델 로드"""
     try:
-        return joblib.load('./2_project/accident_model.joblib')
+        return joblib.load('./accident_model.joblib')
     except FileNotFoundError:
         st.error("❌ 모델 파일을 찾을 수 없습니다. 먼저 model_training.ipynb를 실행하여 모델을 학습하세요.")
         return None
@@ -34,7 +34,7 @@ def load_model():
 def load_model_info():
     """모델 정보 로드"""
     try:
-        with open('./2_project/model_info.json', 'r', encoding='utf-8') as f:
+        with open('./model_info.json', 'r', encoding='utf-8') as f:
             return json.load(f)
     except FileNotFoundError:
         return None
@@ -284,8 +284,8 @@ with tab3:
     import re
     from matplotlib import font_manager as fm
 
-    TIME_ACC_PATH = "./2_project/time_accident.csv"
-    WEATHER_PATH  = "./2_project/timedata.csv"
+    TIME_ACC_PATH = "./time_accident.csv"
+    WEATHER_PATH  = "./timedata.csv"
 
     # 1) 폰트 설정 (Streamlit에서도 matplotlib 폰트 적용)
     
