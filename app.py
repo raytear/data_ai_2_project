@@ -296,7 +296,7 @@ with tab3:
     @st.cache_data(show_spinner=False)
     def build_analysis_frames(time_acc_path: str, weather_path: str):
         # 2) 사고(시간대별, 연간 집계) 전처리
-        df_time_raw = pd.read_csv(time_acc_path, encoding="utf-8")
+        df_time_raw = pd.read_csv(time_acc_path, encoding="cp949")
 
         header_row = df_time_raw.iloc[0].to_dict()
         rename_map = {}
