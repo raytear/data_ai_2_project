@@ -25,7 +25,7 @@ st.markdown("---")
 def load_model():
     """모델 로드"""
     try:
-        return joblib.load('./accident_model.joblib')
+        return joblib.load('./2_team/accident_model.joblib')
     except FileNotFoundError:
         st.error("❌ 모델 파일을 찾을 수 없습니다. 먼저 model_training.ipynb를 실행하여 모델을 학습하세요.")
         return None
@@ -34,7 +34,7 @@ def load_model():
 def load_model_info():
     """모델 정보 로드"""
     try:
-        with open('./model_info.json', 'r', encoding='utf-8') as f:
+        with open('./2_team/model_info.json', 'r', encoding='utf-8') as f:
             return json.load(f)
     except FileNotFoundError:
         return None
@@ -280,17 +280,13 @@ with tab3:
 
     import pandas as pd
     import numpy as np
-    import matplotlib.pyplot as plt
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
     import re
-    from matplotlib import font_manager as fm
 
-    TIME_ACC_PATH = "./time_accident.csv"
-    WEATHER_PATH  = "./timedata.csv"
+    TIME_ACC_PATH = "./2_team/time_accident.csv"
+    WEATHER_PATH  = "./2_team/timedata.csv"
 
-    # 1) 폰트 설정 (Streamlit에서도 matplotlib 폰트 적용)
-    
-    plt.rcParams["font.family"] = "Malgun Gothic"
-    plt.rcParams["axes.unicode_minus"] = False
 
     # 시간대 라벨("0시~2시")에서 시작 시각(0)을 추출해 정렬에 활용
     def start_hour(label: str) -> int:
@@ -300,7 +296,7 @@ with tab3:
     @st.cache_data(show_spinner=False)
     def build_analysis_frames(time_acc_path: str, weather_path: str):
         # 2) 사고(시간대별, 연간 집계) 전처리
-        df_time_raw = pd.read_csv(time_acc_path, encoding="cp949")
+        df_time_raw = pd.read_csv(time_acc_path, encoding="utf-8")
 
         header_row = df_time_raw.iloc[0].to_dict()
         rename_map = {}
@@ -444,73 +440,124 @@ with tab3:
 
     # ===== 시각화 1) 시간대별 사고건수 vs 강수&적설 발생 빈도 =====
     st.subheader("시간대별 사고건수 vs 강수·적설 발생 빈도(시간 수, 2024)")
-    fig1 = plt.figure(figsize=(12, 5))
-    ax1 = plt.gca()
-    ax1.bar(df_band["시간대"], df_band["사고건수"], alpha=0.5)
-    ax1.set_ylabel("사고건수(건)")
-    ax1.set_title("시간대별 사고건수 vs 강수·적설 발생 빈도(시간 수, 2024)")
-    ax1.set_xticks(range(len(df_band)))
-    ax1.set_xticklabels(df_band["시간대"], rotation=45, ha="right")
-
-    ax2 = ax1.twinx()
-    ax2.plot(range(len(df_band)), df_band["rain_hours"], marker="o")
-    ax2.plot(range(len(df_band)), df_band["snow_hours"], marker="o")
-    ax2.set_ylabel("발생 시간 수(시간)")
-    ax2.legend(["강수 발생시간", "적설 발생시간"], loc="upper left")
-
-    plt.tight_layout()
-    st.pyplot(fig1)
-    plt.close(fig1)
+    
+    fig1 = make_subplots(specs=[[{"secondary_y": True}]])
+    
+    # 막대 그래프 (사고건수)
+    fig1.add_trace(
+        go.Bar(x=df_band["시간대"], y=df_band["사고건수"], name="사고건수", opacity=0.5, marker_color='lightblue'),
+        secondary_y=False,
+    )
+    
+    # 선 그래프 (강수 발생시간)
+    fig1.add_trace(
+        go.Scatter(x=df_band["시간대"], y=df_band["rain_hours"], name="강수 발생시간", mode='lines+markers', marker=dict(symbol='circle')),
+        secondary_y=True,
+    )
+    
+    # 선 그래프 (적설 발생시간)
+    fig1.add_trace(
+        go.Scatter(x=df_band["시간대"], y=df_band["snow_hours"], name="적설 발생시간", mode='lines+markers', marker=dict(symbol='circle')),
+        secondary_y=True,
+    )
+    
+    fig1.update_xaxes(title_text="시간대", tickangle=-45)
+    fig1.update_yaxes(title_text="사고건수(건)", secondary_y=False)
+    fig1.update_yaxes(title_text="발생 시간 수(시간)", secondary_y=True)
+    fig1.update_layout(
+        title="시간대별 사고건수 vs 강수·적설 발생 빈도(시간 수, 2024)",
+        height=500,
+        hovermode='x unified'
+    )
+    
+    st.plotly_chart(fig1, use_container_width=True)
 
     # ===== 시각화 2) 시간대별 사고건수 vs 강수/적설 '량'(합계) =====
     st.subheader("시간대별 사고건수 vs 강수·적설량(2024)")
-    fig2 = plt.figure(figsize=(12, 5))
-    ax1 = plt.gca()
-    ax1.bar(df_band["시간대"], df_band["사고건수"], alpha=0.5)
-    ax1.set_ylabel("사고건수(건)")
-    ax1.set_title("2024년도 시간대별 사고건수 vs 강수·적설량")
-    ax1.set_xticks(range(len(df_band)))
-    ax1.set_xticklabels(df_band["시간대"], rotation=45, ha="right")
-
-    ax2 = ax1.twinx()
-    ax2.plot(range(len(df_band)), df_band["total_rain"], marker="o")
-    ax2.plot(range(len(df_band)), df_band["total_snow"], marker="o")
-    ax2.set_ylabel("합계 강수/적설 (mm / cm)")
-    ax2.legend(["강수량 합계(mm)", "적설량 합계(cm)"], loc="upper left")
-
-    plt.tight_layout()
-    st.pyplot(fig2)
-    plt.close(fig2)
+    
+    fig2 = make_subplots(specs=[[{"secondary_y": True}]])
+    
+    # 막대 그래프 (사고건수)
+    fig2.add_trace(
+        go.Bar(x=df_band["시간대"], y=df_band["사고건수"], name="사고건수", opacity=0.5, marker_color='lightblue'),
+        secondary_y=False,
+    )
+    
+    # 선 그래프 (강수량 합계)
+    fig2.add_trace(
+        go.Scatter(x=df_band["시간대"], y=df_band["total_rain"], name="강수량 합계(mm)", mode='lines+markers', marker=dict(symbol='circle')),
+        secondary_y=True,
+    )
+    
+    # 선 그래프 (적설량 합계)
+    fig2.add_trace(
+        go.Scatter(x=df_band["시간대"], y=df_band["total_snow"], name="적설량 합계(cm)", mode='lines+markers', marker=dict(symbol='circle')),
+        secondary_y=True,
+    )
+    
+    fig2.update_xaxes(title_text="시간대", tickangle=-45)
+    fig2.update_yaxes(title_text="사고건수(건)", secondary_y=False)
+    fig2.update_yaxes(title_text="합계 강수/적설 (mm / cm)", secondary_y=True)
+    fig2.update_layout(
+        title="2024년도 시간대별 사고건수 vs 강수·적설량",
+        height=500,
+        hovermode='x unified'
+    )
+    
+    st.plotly_chart(fig2, use_container_width=True)
 
     # ===== 시각화 3) 월별 조건 그래프(3축) =====
     st.subheader("월별 기상 가중 추정 사고지수(3축, 2024)")
-    fig3 = plt.figure(figsize=(12, 5))
-    ax1 = plt.gca()
-
-    ax1.bar(df_month["month_label"], df_month["weighted_index"], alpha=0.5)
-    ax1.set_ylabel("추정 사고지수(강수·적설 발생시간 가중)")
-    ax1.set_xlabel("월(2024)")
-    ax1.set_title("2024년도 월별 기상 가중 추정 사고지수")
-
-    ax2 = ax1.twinx()
-    ax2.plot(df_month["month_label"], df_month["total_rain"], marker="o")
-    ax2.plot(df_month["month_label"], df_month["total_snow"], marker="o")
-    ax2.set_ylabel("월 강수/적설 합계 (mm / cm)")
-    ax2.legend(["월 강수량 합계(mm)", "월 적설량 합계(cm)"], loc="upper left")
-
-    ax3 = ax1.twinx()
-    ax3.spines["right"].set_position(("axes", 1.12))
-    ax3.plot(df_month["month_label"], df_month["avg_temp"], marker="o", linestyle="--", color="red")
-    ax3.set_ylabel("월 평균기온(°C)")
-    ax3.legend(["월 평균기온(°C)"], loc="upper right")
-
+    
+    fig3 = make_subplots(specs=[[{"secondary_y": True}]])
+    
+    # 막대 그래프 (추정 사고지수)
+    fig3.add_trace(
+        go.Bar(x=df_month["month_label"], y=df_month["weighted_index"], name="추정 사고지수", opacity=0.5, marker_color='lightblue'),
+        secondary_y=False,
+    )
+    
+    # 선 그래프 (강수량 합계)
+    fig3.add_trace(
+        go.Scatter(x=df_month["month_label"], y=df_month["total_rain"], name="월 강수량 합계(mm)", mode='lines+markers', marker=dict(symbol='circle')),
+        secondary_y=True,
+    )
+    
+    # 선 그래프 (적설량 합계)
+    fig3.add_trace(
+        go.Scatter(x=df_month["month_label"], y=df_month["total_snow"], name="월 적설량 합계(cm)", mode='lines+markers', marker=dict(symbol='circle')),
+        secondary_y=True,
+    )
+    
+    # 선 그래프 (평균기온) - 다른 스타일로 추가
+    fig3.add_trace(
+        go.Scatter(x=df_month["month_label"], y=df_month["avg_temp"], name="월 평균기온(°C)", mode='lines+markers', 
+                  marker=dict(symbol='circle', color='red'), line=dict(dash='dash', color='red')),
+        secondary_y=True,
+    )
+    
+    # no_precip 텍스트 추가
     for i, r in df_month.iterrows():
         if int(r["no_precip_flag"]) == 1:
-            ax1.text(i, r["weighted_index"], "no\nprecip", ha="center", va="bottom", fontsize=8)
-
-    plt.tight_layout()
-    st.pyplot(fig3)
-    plt.close(fig3)
+            fig3.add_annotation(
+                x=r["month_label"],
+                y=r["weighted_index"],
+                text="no<br>precip",
+                showarrow=False,
+                font=dict(size=8),
+                yshift=10
+            )
+    
+    fig3.update_xaxes(title_text="월(2024)")
+    fig3.update_yaxes(title_text="추정 사고지수(강수·적설 발생시간 가중)", secondary_y=False)
+    fig3.update_yaxes(title_text="월 강수/적설 합계 (mm / cm) / 월 평균기온(°C)", secondary_y=True)
+    fig3.update_layout(
+        title="2024년도 월별 기상 가중 추정 사고지수",
+        height=500,
+        hovermode='x unified'
+    )
+    
+    st.plotly_chart(fig3, use_container_width=True)
 
     # ===== 테이블 =====
     with st.expander("월별 요약 테이블(df_month) 보기"):
